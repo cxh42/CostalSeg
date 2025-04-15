@@ -1,0 +1,5 @@
+arch: DeepLabV3Plus
+encoder_name: efficientnet-b6
+in_channels: 3
+learning_rate: 8.0e-05
+out_classes: 7
