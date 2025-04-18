@@ -8,13 +8,14 @@ from torchvision.models import vit_h_14
 import cv2
 
 class CosineSimilarity:
-    def __init__(self, vector='feature', threshold=0.8, device=None):
+    def __init__(self, vector='feature', threshold=0.8, mean_vec=[], device=None):
         """
         Initialize the CosineSimilarity class.
 
         Args:
             vector (str): Type of vector to use ('feature' or 'image')
             threshold (float): Threshold for determining outliers
+            mean_vec (numpy vector): Preloaded reference vector for comparison
             device (str): Device to use for computation (default: 'mps' if available, else 'cuda' if available, else 'cpu')
         """
         if device is None:
@@ -30,6 +31,7 @@ class CosineSimilarity:
         self.vector = vector
         self.threshold = threshold
         self.model_instance = None
+        self.mean_vec = mean_vec
 
     def model(self):
         """Initialize and return the ViT model."""
@@ -98,14 +100,18 @@ class CosineSimilarity:
 
         # Process reference images
         if self.vector == 'feature':
-            emb_ref_list = []
-            for img in ref_images:
-                processed_img = self.process_image(img)
-                emb = model(processed_img).detach().cpu()
-                emb_ref_list.append(emb)
+            if len(self.mean_vec) > 0:
+                emb_ref = torch.tensor(self.mean_vec)
+            else:
+                emb_ref_list = []
+                for img in ref_images:
+                    processed_img = self.process_image(img)
+                    emb = model(processed_img).detach().cpu()
+                    emb_ref_list.append(emb)
 
-            # Average the reference embeddings
-            emb_ref = torch.mean(torch.stack(emb_ref_list), dim=0)
+                # Average the reference embeddings
+                emb_ref = torch.mean(torch.stack(emb_ref_list), dim=0)
+                
         else:  # 'image'
             emb_ref_list = []
             for img in ref_images:
@@ -141,7 +147,7 @@ class CosineSimilarity:
             # True if it's an outlier (below threshold)
             mask.append(score_value <= self.threshold)
 
-        return np.array(mask), scores
+        return np.array(mask), scores, emb_ref
 
     def filter_outliers(self, ref_images, test_images):
         """
@@ -156,12 +162,12 @@ class CosineSimilarity:
             outlier_mask: Boolean array where True indicates an outlier
             scores: Similarity scores for each test image
         """
-        outlier_mask, scores = self.find_outliers(ref_images, test_images)
+        outlier_mask, scores, mean = self.find_outliers(ref_images, test_images)
 
         # Filter out outliers (keep only non-outliers)
         filtered_images = [img for i, img in enumerate(test_images) if not outlier_mask[i]]
 
-        return filtered_images, outlier_mask, scores
+        return filtered_images, outlier_mask, scores, mean
 
 def detect_outliers(ref_imgs, imgs):
     similarity = CosineSimilarity(vector='feature', threshold=0.8)
@@ -170,6 +176,6 @@ def detect_outliers(ref_imgs, imgs):
     outlier_mask, scores = similarity.find_outliers(ref_imgs, imgs)
 
     # Filter out outliers
-    filtered_images, _, _ = similarity.filter_outliers(ref_imgs, imgs)
+    filtered_images, _, _, mean = similarity.filter_outliers(ref_imgs, imgs)
 
-    return filtered_images
+    return filtered_images, mean
