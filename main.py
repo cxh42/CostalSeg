@@ -11,6 +11,7 @@ from pipeline.ImgOutlier import detect_outliers
 train_input = "./metalmarcy"
 train_output = "./output"
 model_path = "./model/best_model-epoch=11-valid_iou=0.9230.ckpt"
+outlier_ref = "MM_mean.npy"
 
 
 def load_images_from_path(path):
@@ -98,7 +99,8 @@ print("Done Loading")
 ref_images = preprocess_images(ref_images)
 tra_images = preprocess_images(tra_images)
 print("Done Prepocessing")
-filtered_images = detect_outliers(ref_images, tra_images)
+ref_vector = np.load(outlier_ref)
+filtered_images = detect_outliers(ref_images, tra_images, ref_vector)
 print("Done removing outliers")
 all_images = ref_images + filtered_images
 all_segs = segment_images(all_images, model_path)
