@@ -1,0 +1,21 @@
+GENERAL USE
+For the simplest application of our outlier detection algorithm, the user need only provide a set of Metal Marcy or Silhouette Jaenette
+images for testing. In this case, the "ref_imgs" argument for the "detect_outliers" function can be set as the same folder as the test images,
+because the reference images will not be utilized. The "mean_vec" argument should be the pre-saved .npy vector, loaded from filepath in main.py, 
+with MM.npy and SJ.npy being for Metal Marcy and Sihouette Jaenette respectively. The fucntion will return a list of non-outlier images, as well
+as the reference vector ("mean"), though in this case the reference vector will be the same vector that was preloaded.
+
+PREPARING A NEW REFERENCE VECTOR
+Alternatively, if the user wants to update the reference vector or is working with a new dataset, a folder of ~20 "good" images should be made and
+used for the "ref_imgs" argument. No argument is needed for "mean_vec," which will default to an empty vector to be replaced with the "get_embeddings"
+function. The reference embeddings (one for each reference image) will be averaged to produce a new reference vector. This reference vector 
+is returned as "mean," and can be saved by the user with the "numpy.save" function (documentation for this function can be referenced online).
+
+OTHER OPTIONS
+Within the "detect_outliers" function, the user can choose to use image vectors (a 1-D vector containing the image's RGB pixel values) instead
+of feature vectors by setting the "vector" argument as "image" instead of "feature". This results in faster computation, but generally less 
+consistent results. Because the results are less consistent and the computation is (considerably) faster, the option for using a pre-loaded
+"image" reference vector is not implemented [EDIT: Will adjust the code so that this works]. Additionally, the "threshold" value should be adjusted
+for different datasets through an iterative process until desired results are achieved. For the Metal Marcy and Silhouette Jaenette datasets,
+a value of 0.8 was found to be effective but this will not necessarily be true for all datasets. Finally, a different feature-extraction model 
+can be loaded with the "model_instance" argument if desired.
