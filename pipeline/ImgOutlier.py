@@ -57,12 +57,14 @@ class CosineSimilarity:
         # Convert to PIL Image
         pil_img = Image.fromarray(rgb_img)
 
+        # A set of transformations to prepare the image in tensor format
         transformations = tr.Compose([
             tr.ToTensor(),
             tr.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             tr.Resize((518, 518))
         ])
 
+        # preparing the image
         img_tensor = transformations(pil_img).float()
 
         if self.vector == 'image':
@@ -98,10 +100,15 @@ class CosineSimilarity:
             else:  # 'image'
                 emb_test.append(processed_img)
 
-        # Process reference images
+        # Process reference images if necessary
         if self.vector == 'feature':
+
+            # This checks if a reference vector is loaded, if so the process of getting
+            # reference embeddings can be skipped for efficiency
             if len(self.mean_vec) > 0:
                 emb_ref = torch.tensor(self.mean_vec)
+
+            # Standard method of getting reference embedding vector
             else:
                 emb_ref_list = []
                 for img in ref_images:
@@ -111,7 +118,7 @@ class CosineSimilarity:
 
                 # Average the reference embeddings
                 emb_ref = torch.mean(torch.stack(emb_ref_list), dim=0)
-                
+
         else:  # 'image'
             emb_ref_list = []
             for img in ref_images:
@@ -169,8 +176,21 @@ class CosineSimilarity:
 
         return filtered_images, outlier_mask, scores, mean
 
-def detect_outliers(ref_imgs, imgs):
-    similarity = CosineSimilarity(vector='feature', threshold=0.8)
+def detect_outliers(ref_imgs, imgs, mean_vec=[]):
+    """
+    Detects outliers in a set of test images, can use a reference vector
+
+    Args:
+        ref_images: List of cv2 reference images
+        images: List of cv2 test images
+        mean_vec: optional pre-computed reference vector
+
+    Returns:
+        filtered_images: List of non-outlier test images
+        mean: the reference vector used (if a new reference vector should be saved)
+    """
+    
+    similarity = CosineSimilarity(vector='feature', threshold=0.8, mean_vec=mean_vec)
 
     # Get outlier mask and scores
     outlier_mask, scores = similarity.find_outliers(ref_imgs, imgs)
