@@ -100,16 +100,15 @@ class CosineSimilarity:
             else:  # 'image'
                 emb_test.append(processed_img)
 
+        # This checks if a reference vector is loaded, if so the process of getting
+        # reference embeddings can be skipped for efficiency
+        if len(self.mean_vec) > 0:
+            emb_ref = torch.tensor(self.mean_vec)
+
         # Process reference images if necessary
-        if self.vector == 'feature':
-
-            # This checks if a reference vector is loaded, if so the process of getting
-            # reference embeddings can be skipped for efficiency
-            if len(self.mean_vec) > 0:
-                emb_ref = torch.tensor(self.mean_vec)
-
-            # Standard method of getting reference embedding vector
-            else:
+        else:
+            if self.vector == 'feature':
+                # Standard method of getting reference embedding vector
                 emb_ref_list = []
                 for img in ref_images:
                     processed_img = self.process_image(img)
@@ -118,15 +117,15 @@ class CosineSimilarity:
 
                 # Average the reference embeddings
                 emb_ref = torch.mean(torch.stack(emb_ref_list), dim=0)
+            
+            else:  # 'image'
+                emb_ref_list = []
+                for img in ref_images:
+                    processed_img = self.process_image(img)
+                    emb_ref_list.append(processed_img)
 
-        else:  # 'image'
-            emb_ref_list = []
-            for img in ref_images:
-                processed_img = self.process_image(img)
-                emb_ref_list.append(processed_img)
-
-            # Average the reference images
-            emb_ref = torch.mean(torch.stack(emb_ref_list), dim=0)
+                # Average the reference images
+                emb_ref = torch.mean(torch.stack(emb_ref_list), dim=0)
 
         return emb_ref, emb_test
 
