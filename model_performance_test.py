@@ -828,7 +828,7 @@ class ModelTester:
 
 if __name__ == "__main__":
     # Set model path
-    model_path = r"D:\Programs\CostalSeg\lightning_logs\version_0\checkpoints\best_model-epoch=24-valid_iou=0.9270_full.pth"
+    model_path = r"YOUR MODEL PATH HERE"
     
     # Create tester instance
     tester = ModelTester(model_path, output_dir="performance_results")

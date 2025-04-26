@@ -35,50 +35,50 @@ class BeachSegmentationDataset(Dataset):
     }
 
     def __init__(self, images_dir, masks_dir, augmentation=None):
-        # 检查目录是否存在
+        # Check if directory exists
         if not os.path.exists(images_dir):
-            raise FileNotFoundError(f"图像目录不存在: {images_dir}")
+            raise FileNotFoundError(f"Image directory does not exist: {images_dir}")
         if not os.path.exists(masks_dir):
-            raise FileNotFoundError(f"掩码目录不存在: {masks_dir}")
+            raise FileNotFoundError(f"Mask directory does not exist: {masks_dir}")
             
-        # 获取所有jpg文件
+        # Get all jpg files
         self.ids = [f for f in os.listdir(images_dir) if f.endswith('.jpg')]
         
-        # 如果没有找到jpg文件，尝试查找其他图像格式
+        # If no jpg files found, try other image formats
         if len(self.ids) == 0:
-            print(f"警告: 在 {images_dir} 中没有找到jpg文件")
-            print("尝试查找png文件...")
+            print(f"Warning: No jpg files found in {images_dir}")
+            print("Attempting to find png files...")
             self.ids = [f for f in os.listdir(images_dir) if f.endswith('.png')]
             if len(self.ids) > 0:
-                print(f"找到 {len(self.ids)} 个png文件")
+                print(f"Found {len(self.ids)} png files")
         
-        # 如果还是没有找到图像文件，抛出错误
+        # If still no image files found, raise error
         if len(self.ids) == 0:
-            raise FileNotFoundError(f"在 {images_dir} 中没有找到支持的图像文件 (jpg/png)")
+            raise FileNotFoundError(f"No supported image files (jpg/png) found in {images_dir}")
         else:
-            print(f"找到 {len(self.ids)} 个图像文件")
+            print(f"Found {len(self.ids)} image files")
             
         self.images_fps = [os.path.join(images_dir, image_id) for image_id in self.ids]
         
-        # 构建掩码文件路径 (支持jpg和png)
+        # Construct mask file paths (supports jpg and png)
         if self.ids[0].endswith('.jpg'):
             self.masks_fps = [os.path.join(masks_dir, image_id.replace('.jpg', '_mask.png')) for image_id in self.ids]
         else:
             self.masks_fps = [os.path.join(masks_dir, image_id.replace('.png', '_mask.png')) for image_id in self.ids]
             
-        # 检查第一个掩码文件是否存在
+        # Check if the first mask file exists
         if not os.path.exists(self.masks_fps[0]):
-            print(f"警告: 第一个掩码文件不存在: {self.masks_fps[0]}")
-            print("尝试不同的掩码文件命名格式...")
+            print(f"Warning: First mask file does not exist: {self.masks_fps[0]}")
+            print("Attempting a different mask filename format...")
             
-            # 尝试其他常见的掩码命名格式
+            # Try other common mask naming formats
             if self.ids[0].endswith('.jpg'):
                 test_mask = os.path.join(masks_dir, self.ids[0].replace('.jpg', '.png'))
             else:
                 test_mask = os.path.join(masks_dir, self.ids[0].replace('.png', '.png'))
                 
             if os.path.exists(test_mask):
-                print(f"找到替代掩码格式: {test_mask}")
+                print(f"Found alternative mask format: {test_mask}")
                 if self.ids[0].endswith('.jpg'):
                     self.masks_fps = [os.path.join(masks_dir, image_id.replace('.jpg', '.png')) for image_id in self.ids]
                 else:
@@ -301,23 +301,23 @@ def visualize_predictions(model, dataset, device, num_samples=4, save_dir="predi
             plt.close()
 
 def load_torch_model(model_path, device="cpu", arch="DeepLabV3Plus", encoder_name="efficientnet-b6", in_channels=3, out_classes=7):
-    """加载标准PyTorch格式的模型(.pth)用于推理"""
-    # 创建模型架构
+    """Load a standard PyTorch model (.pth) for inference"""
+    # Create model architecture
     model = smp.create_model(
         arch,
         encoder_name=encoder_name,
         in_channels=in_channels,
         classes=out_classes,
-        encoder_weights=None  # 不加载预训练权重
+        encoder_weights=None  # Do not load pretrained weights
     )
-    # 加载权重
+    # Load weights
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
     model.eval()
     return model
 
 def train_model(data_dir="./data", image_size=1024, batch_size=4, epochs=100, num_workers=0):
-    # Set data directories
+    # Using the following data directories:
     x_train_dir = os.path.join(data_dir, "train")
     y_train_dir = os.path.join(data_dir, "train")
     x_valid_dir = os.path.join(data_dir, "valid")
@@ -325,11 +325,10 @@ def train_model(data_dir="./data", image_size=1024, batch_size=4, epochs=100, nu
     x_test_dir = os.path.join(data_dir, "test")
     y_test_dir = os.path.join(data_dir, "test")
     
-    # 打印数据目录信息，方便调试
-    print(f"使用以下数据目录:")
-    print(f"训练图像目录: {x_train_dir}")
-    print(f"验证图像目录: {x_valid_dir}")
-    print(f"测试图像目录: {x_test_dir}")
+    print("Using the following data directories:")
+    print(f"Training images directory: {x_train_dir}")
+    print(f"Validation images directory: {x_valid_dir}")
+    print(f"Testing images directory: {x_test_dir}")
 
     # Create datasets
     train_dataset = BeachSegmentationDataset(
@@ -414,18 +413,18 @@ def train_model(data_dir="./data", image_size=1024, batch_size=4, epochs=100, nu
     # Test model
     test_results = trainer.test(model, dataloaders=test_loader)
     
-    # 保存为标准PyTorch格式(.pth)
+    # Save as standard PyTorch format (.pth)
     best_model = BeachSegmentationModel.load_from_checkpoint(checkpoint_callback.best_model_path)
     torch_model_path = os.path.splitext(checkpoint_callback.best_model_path)[0] + ".pth"
     
-    # 仅保存模型的权重部分（state_dict）
+    # Only save the model's state_dict
     torch.save(best_model.model.state_dict(), torch_model_path)
-    print(f"标准PyTorch模型保存为: {torch_model_path}")
+    print(f"Standard PyTorch model saved as: {torch_model_path}")
     
-    # 也可以保存完整模型（通常文件更大）
+    # Also save full model (usually larger file)
     full_model_path = os.path.splitext(checkpoint_callback.best_model_path)[0] + "_full.pth"
     torch.save(best_model.model, full_model_path)
-    print(f"完整PyTorch模型保存为: {full_model_path}")
+    print(f"Full PyTorch model saved as: {full_model_path}")
     
     # Visualize some prediction results
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -437,26 +436,26 @@ if __name__ == "__main__":
     # Set random seed for reproducibility
     pl.seed_everything(42)
     
-    # 创建保存模型的目录
+    # Create directory to save models
     os.makedirs("models", exist_ok=True)
     
-    # 确保数据目录路径正确 - 使用相对路径，train.py同级目录下的data文件夹
+    # Ensure data directory path is correct - use relative path, data folder at same level as train.py
     current_dir = os.path.dirname(os.path.abspath(__file__))
     data_dir = os.path.join(current_dir, "dataset")
     
-    # 检查数据目录是否存在
+    # Check if data directory exists
     if not os.path.exists(data_dir):
-        print(f"警告: 数据目录 {data_dir} 不存在!")
-        print("请确保dataset目录包含train, valid和test子文件夹")
+        print(f"Warning: Data directory {data_dir} does not exist!")
+        print("Please make sure the 'dataset' directory contains 'train', 'valid', and 'test' subfolders")
     else:
-        print(f"找到数据目录: {data_dir}")
-        # 检查子目录
+        print(f"Found data directory: {data_dir}")
+        # Check subdirectories
         for subdir in ["train", "valid", "test"]:
             subdir_path = os.path.join(data_dir, subdir)
             if not os.path.exists(subdir_path):
-                print(f"警告: 子目录 {subdir_path} 不存在!")
+                print(f"Warning: Subdirectory {subdir_path} does not exist!")
             else:
-                print(f"找到子目录: {subdir_path}")
+                print(f"Found subdirectory: {subdir_path}")
     
     # Start training
     model, trainer, best_model_path, test_results, torch_model_path, full_model_path = train_model(
@@ -468,16 +467,16 @@ if __name__ == "__main__":
     )
     
     print(f"Best model saved at: {best_model_path}")
-    print(f"标准PyTorch模型(.pth)保存为: {torch_model_path}")
-    print(f"完整PyTorch模型保存为: {full_model_path}")
+    print(f"Standard PyTorch model (.pth) saved as: {torch_model_path}")
+    print(f"Full PyTorch model saved as: {full_model_path}")
     print(f"Test results: IoU={test_results[0]['test_iou']:.4f}, F1={test_results[0]['test_f1']:.4f}")
     print("Training completed!")
     
-    # 演示如何加载和使用标准PyTorch模型进行推理
-    print("\n演示如何加载和使用标准PyTorch模型:")
+    # Demonstration of how to load and use the standard PyTorch model for inference
+    print("\nDemonstration of how to load and use the standard PyTorch model:")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
-    # 加载保存的模型
+    # Load saved model
     loaded_model = load_torch_model(
         torch_model_path, 
         device=device,
@@ -487,4 +486,4 @@ if __name__ == "__main__":
         out_classes=7
     )
     
-    print("模型加载成功，可以用于推理。")
+    print("Model loaded successfully and ready for inference.")

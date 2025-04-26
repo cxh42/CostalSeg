@@ -28,10 +28,11 @@ pip install -r requirements.txt
 
 ## Data Preparation
 
-**For segmentation model training datasets from scratch:**
+**Training segmentation model from scratch:**
+Run ./SegmenModelTraining/MetalMarcy/train.py and ./SegmenModelTraining/SilhouetteJaenette/train.py, then save your best trained .pth model to ./models, rename them to MM_best_model.pth and SJ_best_model.pth
 
 **Download our pretrained model:**
-Down load pre trained image segmentation form [link](https://drive.google.com/file/d/1qGGWi3F_BLzHptIFHY33XDsABbfnalEB/view?usp=sharing), unzip the folder to project's root directory.
+Down load pre trained image segmentation model form [link](https://drive.google.com/file/d/1qGGWi3F_BLzHptIFHY33XDsABbfnalEB/view?usp=sharing), unzip the folder to project's root directory.
 
 ## Run
 ```bash
