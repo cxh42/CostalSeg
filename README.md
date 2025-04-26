@@ -1,4 +1,5 @@
 # CostalSeg: Image segmentation for costal erosion monitoring
+# Note: this project is working on progress!!!
 
 University of Washington ENGINE Capstone project: Machine Learning for Community-Driven Coastal Erosion Monitoring and Management
 
@@ -8,8 +9,10 @@ University of Washington ENGINE Capstone project: Machine Learning for Community
 
 ![block](assets/originalshow.jpg)![block](assets/overlayshow.webp)
 
-Try image segmentation demo at 
+Try image segmentation demo at
+
 https://huggingface.co/spaces/AveMujica/MetalMarcy
+
 https://huggingface.co/spaces/AveMujica/SilhouetteJaenette
 
 ## News
