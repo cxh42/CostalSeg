@@ -31,12 +31,14 @@ pip install -r requirements.txt
 **For segmentation model training datasets from scratch:**
 
 **Download our pretrained model:**
+Down load pre trained image segmentation form [link](https://drive.google.com/file/d/1qGGWi3F_BLzHptIFHY33XDsABbfnalEB/view?usp=sharing), unzip the folder to project's root directory.
 
 ## Run
 ```bash
 conda activate CostalSeg
 python app.py
 ```
+Then open the link to use visualized pannel.
 
 ## Contributions
 
