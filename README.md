@@ -1,5 +1,6 @@
-# CostalSeg: Image segmentation for costal erosion monitoring
 # Note: this project is working on progress!!!
+# CostalSeg: Image segmentation for costal erosion monitoring
+
 
 University of Washington ENGINE Capstone project: Machine Learning for Community-Driven Coastal Erosion Monitoring and Management
 
@@ -29,10 +30,12 @@ pip install -r requirements.txt
 ## Data Preparation
 
 **Training segmentation model from scratch:**
-Run ./SegmenModelTraining/MetalMarcy/train.py and ./SegmenModelTraining/SilhouetteJaenette/train.py, then save your best trained .pth model to ./models, rename them to MM_best_model.pth and SJ_best_model.pth
+
+**If you dont want to train model by yourself, just skip this step.** Download dataset for segmentation model training[link](https://drive.google.com/file/d/184yJDCdGg8OZzl6mnEC8e8TvO_cK-qFU/view?usp=sharing), unzip the folder to project's roo directory. Run ./SegmenModelTraining/MetalMarcy/train.py and ./SegmenModelTraining/SilhouetteJaenette/train.py to train model, then save your best trained .pth model to ./models, rename them to MM_best_model.pth and SJ_best_model.pth
 
 **Download our pretrained model:**
-Down load pre trained image segmentation model form [link](https://drive.google.com/file/d/1qGGWi3F_BLzHptIFHY33XDsABbfnalEB/view?usp=sharing), unzip the folder to project's root directory.
+
+Download pretrained image segmentation model form [link](https://drive.google.com/file/d/1qGGWi3F_BLzHptIFHY33XDsABbfnalEB/view?usp=sharing), unzip the folder to project's root directory.
 
 ## Run
 ```bash
