@@ -191,10 +191,10 @@ def detect_outliers(ref_imgs, imgs, mean_vec=[]):
     
     similarity = CosineSimilarity(vector='feature', threshold=0.8, mean_vec=mean_vec)
 
-    # Get outlier mask and scores
-    outlier_mask, scores = similarity.find_outliers(ref_imgs, imgs)
+    # Get outlier mask, scores, and reference vector
+    outlier_mask, scores, mean_vector = similarity.find_outliers(ref_imgs, imgs)
 
     # Filter out outliers
-    filtered_images, _, _, mean = similarity.filter_outliers(ref_imgs, imgs)
+    filtered_images = [img for i, img in enumerate(imgs) if not outlier_mask[i]]
 
-    return filtered_images, mean
+    return filtered_images, mean_vector

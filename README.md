@@ -1,6 +1,42 @@
-# CostalSeg
+# CostalSeg: Image segmentation for costal erosion monitoring
+
 University of Washington ENGINE Capstone project: Machine Learning for Community-Driven Coastal Erosion Monitoring and Management
+
+[Xinghao Chen](https://cxh42.github.io/) <sup>1*</sup>, []
+
+<sup>1 </sup>University of Washington&emsp;
+
+![block](assets/originalshow.jpg)![block](assets/overlayshow.webp)
 
 Try image segmentation demo at 
 https://huggingface.co/spaces/AveMujica/MetalMarcy
 https://huggingface.co/spaces/AveMujica/SilhouetteJaenette
+
+## News
+
+## Environmental Setups
+```bash
+git clone https://github.com/cxh42/CostalSeg.git
+cd CostalSeg
+conda create -n CostalSeg python=3.12 
+conda activate CostalSeg
+pip install -r requirements.txt
+```
+
+## Data Preparation
+
+**For segmentation model training datasets from scratch:**
+
+**Download our pretrained model:**
+
+## Run
+```bash
+conda activate CostalSeg
+python app.py
+```
+
+## Contributions
+
+## Acknowledgement
+
+## Citation
