@@ -1,8 +1,0 @@
-albumentations
-glob
-numpy
-opencv
-pytorch-lightning
-torch
-torchvision
-transformers

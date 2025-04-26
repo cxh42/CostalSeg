@@ -1,0 +1,10 @@
+albumentations
+glob
+numpy
+opencv-python
+pytorch-lightning
+torch
+torchvision
+transformers
+segmentation_models_pytorch
+matplotlib
