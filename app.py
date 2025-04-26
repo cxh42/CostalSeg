@@ -4,6 +4,11 @@ import numpy as np
 import torch
 import gradio as gr
 import segmentation_models_pytorch as smp
+import matplotlib.pyplot as plt
+import io
+import base64
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from PIL import Image
 from glob import glob
 from pipeline.ImgOutlier import detect_outliers
@@ -26,7 +31,7 @@ REFERENCE_IMAGE_DIRS = {
 }
 
 # Category names and color mapping
-CLASSES = ['background', 'cobbles', 'drysand', 'plant', 'sky', 'water', 'wetsand']
+CLASSES = ['Background', 'Cobbles', 'Dry sand', 'Plant', 'Sky', 'Water', 'Wet sand']
 COLORS = [
     [0, 0, 0],        # background - black
     [139, 137, 137],  # cobbles - dark gray
@@ -53,20 +58,20 @@ def load_model(model_path, device="cuda"):
         model.load_state_dict(state_dict)
         model.to(device)
         model.eval()
-        print(f"Model load success: {model_path}")
+        print(f"Model loaded successfully: {model_path}")
         return model
     except Exception as e:
-        print(f"Model load fail: {e}")
+        print(f"Model loading failed: {e}")
         return None
 
 # Load reference vector
 def load_reference_vector(vector_path):
     try:
         ref_vector = np.load(vector_path)
-        print(f"reference vector load success: {vector_path}")
+        print(f"Reference vector loaded successfully: {vector_path}")
         return ref_vector
     except Exception as e:
-        print(f"reference vector load {vector_path}: {e}")
+        print(f"Reference vector loading failed {vector_path}: {e}")
         return []
 
 # Load reference image
@@ -82,10 +87,10 @@ def load_reference_images(ref_dir):
             img = cv2.imread(file)
             if img is not None:
                 reference_images.append(img)
-        print(f"from {ref_dir} load {len(reference_images)} images")
+        print(f"Loaded {len(reference_images)} images from {ref_dir}")
         return reference_images
     except Exception as e:
-        print(f"load image failed {ref_dir}: {e}")
+        print(f"Image loading failed {ref_dir}: {e}")
         return []
 
 # Preprocess the image
@@ -117,15 +122,64 @@ def generate_segmentation_map(prediction, orig_h, orig_w):
         segmentation_map[processed_mask == idx] = color
     return segmentation_map
 
-# Analysis result HTML
+# Analysis result with Pie Chart (including background)
 def create_analysis_result(mask):
+    # Calculate percentages for each class
     total_pixels = mask.size
     percentages = {cls: round((np.sum(mask == i) / total_pixels) * 100, 1)
-                   for i, cls in enumerate(CLASSES)}
-    ordered = ['sky', 'cobbles', 'plant', 'drysand', 'wetsand', 'water']
-    result = "<div style='font-size:18px;font-weight:bold;'>"
-    result += " | ".join(f"{cls}: {percentages.get(cls,0)}%" for cls in ordered)
-    result += "</div>"
+                   for i, cls in enumerate(CLASSES) if np.sum(mask == i) > 0}
+    
+    # Sort percentages by value in descending order
+    sorted_items = sorted(percentages.items(), key=lambda x: x[1], reverse=True)
+    
+    # Create a Figure and canvas for the pie chart
+    fig = Figure(figsize=(8, 5), dpi=100)
+    canvas = FigureCanvas(fig)
+    ax = fig.add_subplot(111)
+    
+    # Create the pie chart with sorted data
+    labels = [item[0] for item in sorted_items]
+    values = [item[1] for item in sorted_items]
+    colors = [np.array(COLORS[CLASSES.index(cls)])/255 for cls in labels]
+    
+    wedges, texts, autotexts = ax.pie(
+        values, 
+        labels=None,  # We'll create a custom legend
+        colors=colors,
+        autopct='%1.1f%%',
+        startangle=90,
+        pctdistance=0.85
+    )
+    
+    # Improve text legibility
+    for autotext in autotexts:
+        autotext.set_fontsize(10)
+        autotext.set_weight('bold')
+        # Make text readable regardless of background color
+        autotext.set_color('white' if np.mean(colors[autotexts.index(autotext)]) < 0.5 else 'black')
+    
+    # Create a legend with colored boxes in the same sorted order
+    legend_elements = [plt.Rectangle((0, 0), 1, 1, color=colors[i], label=f"{labels[i]} ({values[i]}%)") 
+                      for i in range(len(labels))]
+    ax.legend(handles=legend_elements, loc="center left", bbox_to_anchor=(1, 0.5))
+    
+    # Changed title to "Analysis Results"
+    ax.set_title('Analysis Results')
+    ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
+    
+    # Convert the plot to an image
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+    img_str = "data:image/png;base64," + base64.b64encode(buf.read()).decode('utf-8')
+    
+    # Create the HTML content with the embedded image
+    result = f"""
+    <div style='display:flex; flex-direction:column; align-items:center;'>
+        <img src='{img_str}' alt='Terrain Distribution Pie Chart' style='max-width:100%; height:auto;'>
+    </div>
+    """
+    
     return result
 
 # Merge and overlay
@@ -150,85 +204,112 @@ def perform_segmentation(model, image_bgr):
 # Single image processing
 def process_coastal_image(location, input_image):
     if input_image is None:
-        return None, None, "Please upload a picture", "Not detected"
+        return None, None, "Please upload an image to analyze", "No image detected"
+    
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = load_model(MODEL_PATHS[location], device)
+    
     if model is None:
-        return None, None, f"Error: Unable to load model", "Not detected"
+        return None, None, f"Error: Unable to load model", "Analysis failed"
+    
     ref_vector = load_reference_vector(REFERENCE_VECTOR_PATHS[location]) if os.path.exists(REFERENCE_VECTOR_PATHS[location]) else []
     ref_images = load_reference_images(REFERENCE_IMAGE_DIRS[location])
-    outlier_status = "Not detected"
-    is_outlier = False
+    
     image_bgr = cv2.cvtColor(np.array(input_image), cv2.COLOR_RGB2BGR)
+    
+    # Perform outlier detection
+    is_outlier = False
     if len(ref_vector) > 0:
         filtered, _ = detect_outliers(ref_images, [image_bgr], ref_vector)
         is_outlier = len(filtered) == 0
     else:
         filtered, _ = detect_outliers(ref_images, [image_bgr])
         is_outlier = len(filtered) == 0
-    outlier_status = "outlier detection: <span style='color:red;font-weight:bold'>not pass</span>" if is_outlier else "outlier detection: <span style='color:green;font-weight:bold'>pass</span>"
+    
+    outlier_status = "Outlier Detection: <span style='color:red;font-weight:bold'>Failed</span>" if is_outlier else "Outlier Detection: <span style='color:green;font-weight:bold'>Passed</span>"
+    
     seg_map, overlay, analysis = perform_segmentation(model, image_bgr)
+    
     if is_outlier:
-        analysis = "<div style='color:red;font-weight:bold;margin-bottom:10px'>warning: image did not pass outlier detection, results may be inaccurate!</div>" + analysis
+        analysis = "<div style='color:red;font-weight:bold;margin-bottom:10px'>Warning: Image did not pass outlier detection. Results may be less accurate!</div>" + analysis
+    
     return seg_map, overlay, analysis, outlier_status
 
-# Spacial Alignment
+# Spatial Alignment
 def process_with_alignment(location, reference_image, input_image):
     if reference_image is None or input_image is None:
-        return None, None, None, None, "upload the reference image and the image to be analyzed", "Unprocessed"
+        return None, None, None, None, "Please upload both reference and target images for analysis", "Not processed"
+    
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = load_model(MODEL_PATHS[location], device)
+    
     if model is None:
-        return None, None, None, None, "error: cannot load model", "Unprocessed"
+        return None, None, None, None, "Error: Unable to load model", "Analysis failed"
+    
     ref_bgr = cv2.cvtColor(np.array(reference_image), cv2.COLOR_RGB2BGR)
     tgt_bgr = cv2.cvtColor(np.array(input_image), cv2.COLOR_RGB2BGR)
+    
     aligned, _ = align_images([ref_bgr, tgt_bgr], [np.zeros_like(ref_bgr), np.zeros_like(tgt_bgr)])
     aligned_tgt_bgr = aligned[1]
+    
     seg_map, overlay, analysis = perform_segmentation(model, aligned_tgt_bgr)
-    status = "Spacial Alignment: <span style='color:green;font-weight:bold'>complete</span>"
+    
+    status = "Spatial Alignment: <span style='color:green;font-weight:bold'>Successfully Completed</span>"
+    
     ref_rgb = cv2.cvtColor(ref_bgr, cv2.COLOR_BGR2RGB)
     aligned_tgt_rgb = cv2.cvtColor(aligned_tgt_bgr, cv2.COLOR_BGR2RGB)
+    
     return ref_rgb, aligned_tgt_rgb, seg_map, overlay, analysis, status
 
 # Create the Gradio interface
 def create_interface():
-    scale = 0.5
-    disp_w, disp_h = int(1365*scale), int(1024*scale)
     with gr.Blocks(title="Coastal Erosion Analysis System") as demo:
         gr.Markdown("""# Coastal Erosion Analysis System
 
-Upload coastal photos for analysis, including segmentation and spatial alignment function.""")
+Upload coastal photographs for segmentation analysis and spatial alignment. The system identifies terrain types including background, cobbles, sand, plants, sky, and water.""")
+        
         with gr.Tabs():
             with gr.TabItem("Single Image Segmentation"):
                 with gr.Row():
-                    loc1 = gr.Radio(list(MODEL_PATHS.keys()), label="Select cradle", value=list(MODEL_PATHS.keys())[0])
+                    loc1 = gr.Radio(list(MODEL_PATHS.keys()), label="Select Location", value=list(MODEL_PATHS.keys())[0])
+                
                 with gr.Row():
-                    inp = gr.Image(label="Input image", type="numpy", image_mode="RGB")
-                    seg = gr.Image(label="Segment image", type="numpy", width=disp_w, height=disp_h)
-                    ovl = gr.Image(label="Overlay image", type="numpy", width=disp_w, height=disp_h)
+                    inp = gr.Image(label="Input Image", type="numpy", image_mode="RGB")
+                    seg = gr.Image(label="Segmentation Map", type="numpy")
+                    ovl = gr.Image(label="Overlay Visualization", type="numpy")
+                
                 with gr.Row():
-                    btn1 = gr.Button("Run segmentation")
-                status1 = gr.HTML(label="Outlier detection status")
-                res1 = gr.HTML(label="Analyze results")
+                    btn1 = gr.Button("Run Segmentation Analysis", variant="primary")
+                
+                status1 = gr.HTML(label="Outlier Detection Status")
+                res1 = gr.HTML(label="Terrain Analysis")
+                
                 btn1.click(fn=process_coastal_image, inputs=[loc1, inp], outputs=[seg, ovl, res1, status1])
             
-            with gr.TabItem("Spatial alignment segmentation"):
+            with gr.TabItem("Spatial Alignment Segmentation"):
                 with gr.Row():
-                    loc2 = gr.Radio(list(MODEL_PATHS.keys()), label="Select cradle", value=list(MODEL_PATHS.keys())[0])
+                    loc2 = gr.Radio(list(MODEL_PATHS.keys()), label="Select Location", value=list(MODEL_PATHS.keys())[0])
+                
                 with gr.Row():
-                    ref_img = gr.Image(label="Reference image", type="numpy", image_mode="RGB")
-                    tgt_img = gr.Image(label="Image to be analyzed", type="numpy", image_mode="RGB")
+                    ref_img = gr.Image(label="Reference Image", type="numpy", image_mode="RGB")
+                    tgt_img = gr.Image(label="Target Image for Analysis", type="numpy", image_mode="RGB")
+                
                 with gr.Row():
-                    btn2 = gr.Button("Run spatial alignment segmentation")
+                    btn2 = gr.Button("Run Spatial Alignment Analysis", variant="primary")
+                
                 with gr.Row():
-                    orig = gr.Image(label="Original image", type="numpy", width=disp_w, height=disp_h)
-                    aligned = gr.Image(label="Aligned image", type="numpy", width=disp_w, height=disp_h)
+                    orig = gr.Image(label="Original Reference", type="numpy")
+                    aligned = gr.Image(label="Aligned Image", type="numpy")
+                
                 with gr.Row():
-                    seg2 = gr.Image(label="Segmente image", type="numpy", width=disp_w, height=disp_h)
-                    ovl2 = gr.Image(label="Overlay image", type="numpy", width=disp_w, height=disp_h)
-                status2 = gr.HTML(label="Spatial alignment status")
-                res2 = gr.HTML(label="Analyze results")
+                    seg2 = gr.Image(label="Segmentation Map", type="numpy")
+                    ovl2 = gr.Image(label="Overlay Visualization", type="numpy")
+                
+                status2 = gr.HTML(label="Spatial Alignment Status")
+                res2 = gr.HTML(label="Terrain Analysis")
+                
                 btn2.click(fn=process_with_alignment, inputs=[loc2, ref_img, tgt_img], outputs=[orig, aligned, seg2, ovl2, res2, status2])
+    
     return demo
 
 if __name__ == "__main__":
@@ -236,6 +317,7 @@ if __name__ == "__main__":
         os.makedirs(path, exist_ok=True)
     for p in MODEL_PATHS.values():
         if not os.path.exists(p):
-            print(f"error: model file {p} do not exist!")
+            print(f"Error: Model file {p} does not exist!")
     demo = create_interface()
-    demo.launch()
+    # Added inbrowser=True to automatically open the browser
+    demo.launch(inbrowser=True)
