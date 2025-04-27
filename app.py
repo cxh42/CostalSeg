@@ -9,7 +9,6 @@ import io
 import base64
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from PIL import Image
 from glob import glob
 from pipeline.ImgOutlier import detect_outliers
 from pipeline.normalization import align_images
@@ -44,6 +43,16 @@ COLORS = [
 
 # Load model function
 def load_model(model_path, device="cuda"):
+    """
+    Load the segmentation model from the specified path
+    
+    Args:
+        model_path (str): Path to the model file
+        device (str): Device to load the model on ('cuda' or 'cpu')
+        
+    Returns:
+        model: Loaded PyTorch model or None if loading failed
+    """
     try:
         model = smp.create_model(
             "DeepLabV3Plus",
@@ -66,6 +75,15 @@ def load_model(model_path, device="cuda"):
 
 # Load reference vector
 def load_reference_vector(vector_path):
+    """
+    Load the reference vector used for outlier detection
+    
+    Args:
+        vector_path (str): Path to the reference vector file
+        
+    Returns:
+        np.array: Reference vector or empty list if loading failed
+    """
     try:
         ref_vector = np.load(vector_path)
         print(f"Reference vector loaded successfully: {vector_path}")
@@ -74,8 +92,17 @@ def load_reference_vector(vector_path):
         print(f"Reference vector loading failed {vector_path}: {e}")
         return []
 
-# Load reference image
+# Load reference images
 def load_reference_images(ref_dir):
+    """
+    Load reference images from the specified directory
+    
+    Args:
+        ref_dir (str): Directory containing reference images
+        
+    Returns:
+        list: List of loaded reference images or empty list if loading failed
+    """
     try:
         image_extensions = ['*.jpg', '*.jpeg', '*.png', '*.bmp']
         image_files = []
@@ -95,6 +122,15 @@ def load_reference_images(ref_dir):
 
 # Preprocess the image
 def preprocess_image(image):
+    """
+    Preprocess an image for model inference
+    
+    Args:
+        image (np.array): Input image in RGB format
+        
+    Returns:
+        tuple: (preprocessed image tensor, original height, original width)
+    """
     if image.shape[2] == 4:
         image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
     orig_h, orig_w = image.shape[:2]
@@ -108,6 +144,17 @@ def preprocess_image(image):
 
 # Generate segmentation map and visualization
 def generate_segmentation_map(prediction, orig_h, orig_w):
+    """
+    Generate a segmentation map from model prediction
+    
+    Args:
+        prediction (torch.Tensor): Model prediction
+        orig_h (int): Original image height
+        orig_w (int): Original image width
+        
+    Returns:
+        np.array: Segmentation map as a colored image
+    """
     mask = prediction.argmax(1).squeeze().cpu().numpy().astype(np.uint8)
     mask_resized = cv2.resize(mask, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
     kernel = np.ones((5, 5), np.uint8)
@@ -124,6 +171,15 @@ def generate_segmentation_map(prediction, orig_h, orig_w):
 
 # Analysis result with Pie Chart (including background)
 def create_analysis_result(mask):
+    """
+    Create a pie chart visualization of the terrain distribution
+    
+    Args:
+        mask (np.array): Segmentation mask
+        
+    Returns:
+        str: HTML content with embedded pie chart
+    """
     # Calculate percentages for each class
     total_pixels = mask.size
     percentages = {cls: round((np.sum(mask == i) / total_pixels) * 100, 1)
@@ -163,7 +219,7 @@ def create_analysis_result(mask):
                       for i in range(len(labels))]
     ax.legend(handles=legend_elements, loc="center left", bbox_to_anchor=(1, 0.5))
     
-    # Changed title to "Analysis Results"
+    # Set title to "Analysis Results"
     ax.set_title('Analysis Results')
     ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
     
@@ -184,12 +240,33 @@ def create_analysis_result(mask):
 
 # Merge and overlay
 def create_overlay(image, segmentation_map, alpha=0.5):
+    """
+    Create an overlay of the original image and segmentation map
+    
+    Args:
+        image (np.array): Original image in RGB format
+        segmentation_map (np.array): Segmentation map
+        alpha (float): Transparency value for the overlay
+        
+    Returns:
+        np.array: Overlay image
+    """
     if image.shape[:2] != segmentation_map.shape[:2]:
         segmentation_map = cv2.resize(segmentation_map, (image.shape[1], image.shape[0]), interpolation=cv2.INTER_NEAREST)
     return cv2.addWeighted(image, 1-alpha, segmentation_map, alpha, 0)
 
 # Perform segmentation
 def perform_segmentation(model, image_bgr):
+    """
+    Perform segmentation on an image
+    
+    Args:
+        model: Loaded PyTorch model
+        image_bgr (np.array): Input image in BGR format
+        
+    Returns:
+        tuple: (segmentation map, overlay image, analysis HTML)
+    """
     device = "cuda" if torch.cuda.is_available() else "cpu"
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
     image_tensor, orig_h, orig_w = preprocess_image(image_rgb)
@@ -201,47 +278,131 @@ def perform_segmentation(model, image_bgr):
     analysis = create_analysis_result(mask)
     return seg_map, overlay, analysis
 
-# Single image processing
-def process_coastal_image(location, input_image):
-    if input_image is None:
-        return None, None, "Please upload an image to analyze", "No image detected"
+# Split the processing into separate functions for progressive display
+
+def run_segmentation(location, input_image, progress=gr.Progress()):
+    """
+    Run image segmentation task independently
     
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = load_model(MODEL_PATHS[location], device)
+    Args:
+        location (str): Location name for model selection
+        input_image (np.array): Input image
+        progress: Gradio progress indicator
+        
+    Returns:
+        tuple: (segmentation map, overlay image, analysis HTML)
+    """
+    if input_image is None:
+        return None, None, "Please upload an image to analyze"
+    
+    # Set up GPU device
+    gpu_device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    # Show loading status
+    progress(0, desc="Loading segmentation model...")
+    model = load_model(MODEL_PATHS[location], gpu_device)
     
     if model is None:
-        return None, None, f"Error: Unable to load model", "Analysis failed"
+        return None, None, "Error: Unable to load model"
     
+    # Process the image
+    image_bgr = cv2.cvtColor(np.array(input_image), cv2.COLOR_RGB2BGR)
+    
+    progress(0.3, desc="Performing segmentation (GPU)...")
+    seg_map, overlay, analysis = perform_segmentation(model, image_bgr)
+    
+    progress(1.0, desc="Segmentation complete")
+    return seg_map, overlay, analysis
+
+def run_outlier_detection(location, input_image, progress=gr.Progress()):
+    """
+    Run outlier detection task independently
+    
+    Args:
+        location (str): Location name for model selection
+        input_image (np.array): Input image
+        progress: Gradio progress indicator
+        
+    Returns:
+        str: Outlier detection status HTML
+    """
+    if input_image is None:
+        return "No image detected"
+    
+    # Set up CPU device
+    cpu_device = "cpu"
+    
+    # Show loading status
+    progress(0, desc="Loading reference data...")
+    
+    # Load reference data
     ref_vector = load_reference_vector(REFERENCE_VECTOR_PATHS[location]) if os.path.exists(REFERENCE_VECTOR_PATHS[location]) else []
     ref_images = load_reference_images(REFERENCE_IMAGE_DIRS[location])
     
     image_bgr = cv2.cvtColor(np.array(input_image), cv2.COLOR_RGB2BGR)
     
     # Perform outlier detection
+    progress(0.3, desc="Performing outlier detection (CPU)...")
     is_outlier = False
-    if len(ref_vector) > 0:
-        filtered, _ = detect_outliers(ref_images, [image_bgr], ref_vector)
-        is_outlier = len(filtered) == 0
-    else:
-        filtered, _ = detect_outliers(ref_images, [image_bgr])
-        is_outlier = len(filtered) == 0
     
+    # Force CPU usage for outlier detection
+    with torch.device(cpu_device):
+        if len(ref_vector) > 0:
+            filtered, _ = detect_outliers(ref_images, [image_bgr], ref_vector)
+            is_outlier = len(filtered) == 0
+        else:
+            filtered, _ = detect_outliers(ref_images, [image_bgr])
+            is_outlier = len(filtered) == 0
+    
+    progress(1.0, desc="Outlier detection complete")
     outlier_status = "Outlier Detection: <span style='color:red;font-weight:bold'>Failed</span>" if is_outlier else "Outlier Detection: <span style='color:green;font-weight:bold'>Passed</span>"
     
-    seg_map, overlay, analysis = perform_segmentation(model, image_bgr)
-    
+    # Add warning to analysis if outlier
     if is_outlier:
-        analysis = "<div style='color:red;font-weight:bold;margin-bottom:10px'>Warning: Image did not pass outlier detection. Results may be less accurate!</div>" + analysis
+        outlier_warning = "<div style='color:red;font-weight:bold;margin-bottom:10px'>Warning: Image did not pass outlier detection. Results may be less accurate!</div>"
+        return outlier_status, outlier_warning
     
-    return seg_map, overlay, analysis, outlier_status
+    return outlier_status, ""
 
-# Spatial Alignment
-def process_with_alignment(location, reference_image, input_image):
+def update_analysis_with_warning(analysis, warning):
+    """
+    Update analysis HTML with warning message if needed
+    
+    Args:
+        analysis (str): Original analysis HTML
+        warning (str): Warning message to prepend
+        
+    Returns:
+        str: Updated analysis HTML
+    """
+    if warning and analysis:
+        return warning + analysis
+    return analysis
+
+# Spatial Alignment with progressive display
+def run_alignment_and_segmentation(location, reference_image, input_image, progress=gr.Progress()):
+    """
+    Run spatial alignment and segmentation with progressive display
+    
+    Args:
+        location (str): Location name for model selection
+        reference_image (np.array): Reference image
+        input_image (np.array): Input image to analyze
+        progress: Gradio progress indicator
+        
+    Returns:
+        tuple: (reference image, aligned image, segmentation map, overlay image, analysis HTML, status HTML)
+    """
     if reference_image is None or input_image is None:
         return None, None, None, None, "Please upload both reference and target images for analysis", "Not processed"
     
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = load_model(MODEL_PATHS[location], device)
+    # Set up GPU device
+    gpu_device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    # Show loading status
+    progress(0, desc="Loading segmentation model...")
+    
+    model = load_model(MODEL_PATHS[location], gpu_device)
     
     if model is None:
         return None, None, None, None, "Error: Unable to load model", "Analysis failed"
@@ -249,24 +410,42 @@ def process_with_alignment(location, reference_image, input_image):
     ref_bgr = cv2.cvtColor(np.array(reference_image), cv2.COLOR_RGB2BGR)
     tgt_bgr = cv2.cvtColor(np.array(input_image), cv2.COLOR_RGB2BGR)
     
+    # Perform alignment (this step is needed before segmentation)
+    progress(0.3, desc="Performing spatial alignment...")
     aligned, _ = align_images([ref_bgr, tgt_bgr], [np.zeros_like(ref_bgr), np.zeros_like(tgt_bgr)])
     aligned_tgt_bgr = aligned[1]
     
+    # Convert images for display
+    ref_rgb = cv2.cvtColor(ref_bgr, cv2.COLOR_BGR2RGB)
+    aligned_tgt_rgb = cv2.cvtColor(aligned_tgt_bgr, cv2.COLOR_BGR2RGB)
+    
+    # Show alignment complete status
+    progress(0.5, desc="Alignment complete, performing segmentation...")
+    
+    # Now perform segmentation
     seg_map, overlay, analysis = perform_segmentation(model, aligned_tgt_bgr)
     
     status = "Spatial Alignment: <span style='color:green;font-weight:bold'>Successfully Completed</span>"
     
-    ref_rgb = cv2.cvtColor(ref_bgr, cv2.COLOR_BGR2RGB)
-    aligned_tgt_rgb = cv2.cvtColor(aligned_tgt_bgr, cv2.COLOR_BGR2RGB)
-    
+    progress(1.0, desc="Analysis complete")
     return ref_rgb, aligned_tgt_rgb, seg_map, overlay, analysis, status
 
-# Create the Gradio interface
+# Create the Gradio interface with progressive display
 def create_interface():
+    """
+    Create the Gradio web interface with progressive result display
+    
+    Returns:
+        gradio.Blocks: Gradio interface
+    """
     with gr.Blocks(title="Coastal Erosion Analysis System") as demo:
         gr.Markdown("""# Coastal Erosion Analysis System
 
 Upload coastal photographs for segmentation analysis and spatial alignment. The system identifies terrain types including background, cobbles, sand, plants, sky, and water.""")
+        
+        # Store analysis content for updating with warnings
+        current_analysis = gr.State("")
+        outlier_warning = gr.State("")
         
         with gr.Tabs():
             with gr.TabItem("Single Image Segmentation"):
@@ -279,12 +458,33 @@ Upload coastal photographs for segmentation analysis and spatial alignment. The 
                     ovl = gr.Image(label="Overlay Visualization", type="numpy")
                 
                 with gr.Row():
-                    btn1 = gr.Button("Run Segmentation Analysis", variant="primary")
+                    btn1 = gr.Button("Run Analysis", variant="primary")
                 
                 status1 = gr.HTML(label="Outlier Detection Status")
                 res1 = gr.HTML(label="Terrain Analysis")
                 
-                btn1.click(fn=process_coastal_image, inputs=[loc1, inp], outputs=[seg, ovl, res1, status1])
+                # When the button is clicked, run both functions in parallel
+                btn1.click(
+                    fn=run_segmentation,
+                    inputs=[loc1, inp],
+                    outputs=[seg, ovl, res1]
+                ).then(
+                    fn=lambda analysis: analysis,
+                    inputs=[res1],
+                    outputs=[current_analysis]
+                )
+                
+                # Also start outlier detection
+                btn1.click(
+                    fn=run_outlier_detection,
+                    inputs=[loc1, inp],
+                    outputs=[status1, outlier_warning]
+                ).then(
+                    # Update analysis with warning if needed
+                    fn=update_analysis_with_warning,
+                    inputs=[current_analysis, outlier_warning],
+                    outputs=[res1]
+                )
             
             with gr.TabItem("Spatial Alignment Segmentation"):
                 with gr.Row():
@@ -308,16 +508,25 @@ Upload coastal photographs for segmentation analysis and spatial alignment. The 
                 status2 = gr.HTML(label="Spatial Alignment Status")
                 res2 = gr.HTML(label="Terrain Analysis")
                 
-                btn2.click(fn=process_with_alignment, inputs=[loc2, ref_img, tgt_img], outputs=[orig, aligned, seg2, ovl2, res2, status2])
+                # For alignment, we use the progressive display function
+                btn2.click(
+                    fn=run_alignment_and_segmentation,
+                    inputs=[loc2, ref_img, tgt_img],
+                    outputs=[orig, aligned, seg2, ovl2, res2, status2]
+                )
     
     return demo
 
 if __name__ == "__main__":
+    # Create necessary directories if they don't exist
     for path in ["models", "reference_images/MM", "reference_images/SJ"]:
         os.makedirs(path, exist_ok=True)
+    
+    # Check if model files exist
     for p in MODEL_PATHS.values():
         if not os.path.exists(p):
             print(f"Error: Model file {p} does not exist!")
+    
+    # Create and launch the interface
     demo = create_interface()
-    # Added inbrowser=True to automatically open the browser
     demo.launch(inbrowser=True)
