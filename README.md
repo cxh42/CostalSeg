@@ -34,7 +34,7 @@ pip install -r requirements.txt
 
 If you dont want to train model by yourself, just skip this step. Download dataset for segmentation model training from [link](https://drive.google.com/file/d/184yJDCdGg8OZzl6mnEC8e8TvO_cK-qFU/view?usp=sharing), unzip the folder to project's root directory. 
 
-Run ./SegmenModelTraining/MetalMarcy/train.py and ./SegmenModelTraining/SilhouetteJaenette/train.py to train model, then save your best trained .pth model to ./models, rename them to MM_best_model.pth and SJ_best_model.pth
+Run `./SegmenModelTraining/MetalMarcy/train.py` and `./SegmenModelTraining/SilhouetteJaenette/train.py` to train model, then save your best trained .pth model to `./models`, rename them to `MM_best_model.pth` and `SJ_best_model.pth`
 
 **2. Download our pretrained model:**
 
