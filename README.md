@@ -9,8 +9,8 @@ Machine Learning for Community-Driven Coastal Erosion Monitoring and Management
 <sup>1 </sup>University of Washington&emsp;
 
 <div style="display: flex; justify-content: center;">
-    <img src="assets/originalshow.jpg" style="width: 50%;" />
-    <img src="assets/overlayshow.webp" style="width: 50%;" />
+    <img src="assets/originalshow.jpg" style="width: 49%;" />
+    <img src="assets/overlayshow.webp" style="width: 49%;" />
 </div>
 
 Try image segmentation demo at  
