@@ -1,20 +1,21 @@
-# Note: this project is working on progress!!!
 # CostalSeg: Image segmentation for costal erosion monitoring
 
+University of Washington ENGINE Capstone project: 
 
-University of Washington ENGINE Capstone project: Machine Learning for Community-Driven Coastal Erosion Monitoring and Management
+Machine Learning for Community-Driven Coastal Erosion Monitoring and Management
 
-[Xinghao Chen](https://cxh42.github.io/) <sup>1*</sup>, []
+[Xinghao Chen](https://cxh42.github.io/) <sup>1*</sup>, [] <sup>1*</sup>, [] <sup>1*</sup>, [] <sup>1*</sup>, [] <sup>1*</sup>, [] <sup>1*</sup>, [] <sup>1*</sup>, [] <sup>1*</sup>
 
 <sup>1 </sup>University of Washington&emsp;
 
-![block](assets/originalshow.jpg)![block](assets/overlayshow.webp)
+<div style="display: flex; justify-content: center;">
+    <img src="assets/originalshow.jpg" style="width: 50%;" />
+    <img src="assets/overlayshow.webp" style="width: 50%;" />
+</div>
 
-Try image segmentation demo at
-
-https://huggingface.co/spaces/AveMujica/MetalMarcy
-
-https://huggingface.co/spaces/AveMujica/SilhouetteJaenette
+Try image segmentation demo at  
+https://huggingface.co/spaces/AveMujica/MetalMarcy  
+https://huggingface.co/spaces/AveMujica/SilhouetteJaenette  
 
 ## News
 
@@ -29,11 +30,13 @@ pip install -r requirements.txt
 
 ## Data Preparation
 
-**Training segmentation model from scratch:**
+**1. Training segmentation model from scratch:**
 
-**If you dont want to train model by yourself, just skip this step.** Download dataset for segmentation model training[link](https://drive.google.com/file/d/184yJDCdGg8OZzl6mnEC8e8TvO_cK-qFU/view?usp=sharing), unzip the folder to project's roo directory. Run ./SegmenModelTraining/MetalMarcy/train.py and ./SegmenModelTraining/SilhouetteJaenette/train.py to train model, then save your best trained .pth model to ./models, rename them to MM_best_model.pth and SJ_best_model.pth
+If you dont want to train model by yourself, just skip this step. Download dataset for segmentation model training from [link](https://drive.google.com/file/d/184yJDCdGg8OZzl6mnEC8e8TvO_cK-qFU/view?usp=sharing), unzip the folder to project's root directory. 
 
-**Download our pretrained model:**
+Run ./SegmenModelTraining/MetalMarcy/train.py and ./SegmenModelTraining/SilhouetteJaenette/train.py to train model, then save your best trained .pth model to ./models, rename them to MM_best_model.pth and SJ_best_model.pth
+
+**2. Download our pretrained model:**
 
 Download pretrained image segmentation model form [link](https://drive.google.com/file/d/1qGGWi3F_BLzHptIFHY33XDsABbfnalEB/view?usp=sharing), unzip the folder to project's root directory.
 
@@ -42,7 +45,7 @@ Download pretrained image segmentation model form [link](https://drive.google.co
 conda activate CostalSeg
 python app.py
 ```
-Then open the link to use visualized pannel.
+By running app.py, a graphical interactive interface will automatically open in the browser.
 
 ## Contributions
 
