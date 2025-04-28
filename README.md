@@ -6,9 +6,9 @@ University of Washington ENGINE Capstone project:
 
 Machine Learning for Community-Driven Coastal Erosion Monitoring and Management
 
-[Xinghao Chen](https://cxh42.github.io/) <sup>1*</sup>, [Zheheng Li](https://github.com/Martyr12333) <sup>1*</sup>, [] <sup>1*</sup>, [] <sup>1*</sup>, [] <sup>1*</sup>, [] <sup>1*</sup>, [] <sup>1*</sup>, [] <sup>1*</sup>
+[Xinghao Chen](https://cxh42.github.io/) <sup>1,</sup><sup>2</sup>, [Zheheng Li](https://github.com/Martyr12333) <sup>1,</sup><sup>2</sup>, [] <sup>1,</sup><sup>2</sup>, [] <sup>1,</sup><sup>2</sup>, [] <sup>1,</sup><sup>2</sup>, [] <sup>1,</sup><sup>2</sup>, [] <sup>1,</sup><sup>2</sup>, [] <sup>1,</sup><sup>2</sup>
 
-<sup>1 </sup>University of Washington&emsp;
+<sup>1 </sup>University of Washington&emsp; <sup>2 </sup>University of Washington Applied Physics Laboratory &emsp;
 
 <div style="display: flex; justify-content: center;">
     <img src="assets/originalshow.jpg" style="width: 49%;" />
