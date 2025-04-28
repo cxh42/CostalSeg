@@ -1,6 +1,6 @@
 # CostalSeg: Image segmentation for costal erosion monitoring
 
-## [Project Page](https://costalseg.github.io/)| [arXiv Paper]()
+## [Project Page](https://costalseg.github.io/) | [arXiv Paper]()
 
 University of Washington ENGINE Capstone project: 
 
