@@ -19,8 +19,6 @@ https://huggingface.co/spaces/AveMujica/MetalMarcy
 https://huggingface.co/spaces/AveMujica/SilhouetteJaenette  
 https://huggingface.co/spaces/AveMujica/CostalSegment(slower, integrates outlier detection and spatial alignment, mainly used for the [MyCoast](https://mycoast.org/wa).)  
 
-## News
-
 ## Environmental Setups
 ```bash
 git clone https://github.com/cxh42/CostalSeg.git
