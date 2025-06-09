@@ -17,7 +17,7 @@ Try image segmentation demo at
 
 https://huggingface.co/spaces/AveMujica/MetalMarcy  
 https://huggingface.co/spaces/AveMujica/SilhouetteJaenette  
-https://huggingface.co/spaces/AveMujica/CostalSegment(slower, integrates outlier detection and spatial alignment, mainly used for the [MyCoast](https://mycoast.org/wa).)  
+https://huggingface.co/spaces/AveMujica/CostalSegment (slower, integrates outlier detection and spatial alignment, mainly used for the [MyCoast](https://mycoast.org/wa).)  
 
 ## Environmental Setups
 ```bash
