@@ -2,11 +2,9 @@
 
 ## About
 This is University of Washington ENGINE Capstone project: Machine Learning for Community-Driven Coastal Erosion Monitoring and Management.  
-We present a system for multi-class segmentation and analysis of community user-uploaded images, while also integrating outlier detection and multi-image perspective correction. This is an image processing system developed for coastal research at the University of Washington Applied Physics Laboratory.  
-The Segmentation Model capable of automatically identifying and segmenting 7 major categories in beach images: background, cobbles, dry sand, plants, sky, water, and wet sand.  
-This model is particularly suitable for marine environment monitoring, coastline change analysis, beach resource management, and other applications, providing reliable automated analysis tools for marine geographic information systems.
+We present a system for multi-class segmentation and analysis of community user-uploaded images, while also integrating outlier detection and multi-image perspective correction.  This is an image processing system developed for coastal research at the University of Washington Applied Physics Laboratory.  
+Segmentation Model: DeepLabV3Plus with EfficientNet-B6, achieving excellent balance between accuracy and efficiency.
 
-Network Architecture: Utilizes DeepLabV3Plus architecture with EfficientNet-B6 pre-trained encoder, achieving excellent balance between accuracy and efficiency
 [Xinghao Chen](https://cxh42.github.io/) <sup>1,</sup><sup>2</sup>, [Zheheng Li](https://github.com/Martyr12333) <sup>1,</sup><sup>2</sup>, [Dylan Scott](https://github.com/dwilsons) <sup>1,</sup><sup>2</sup>, Aaryan Shah <sup>1,</sup><sup>2</sup>, Bauka Zhandulla <sup>1,</sup><sup>2</sup>, Sarah Li <sup>1,</sup><sup>2</sup>
 
 <sup>1 </sup>University of Washington&emsp; <sup>2 </sup>University of Washington Applied Physics Laboratory &emsp;
