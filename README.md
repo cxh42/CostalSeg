@@ -1,7 +1,5 @@
 # CostalSeg: Image segmentation for costal erosion monitoring
 
-## [Project Page](https://costalseg.github.io/)
-
 ## About
 This is University of Washington ENGINE Capstone project: Machine Learning for Community-Driven Coastal Erosion Monitoring and Management.
 We present a system for multi-class segmentation and analysis of community user-uploaded images, while also integrating outlier detection and multi-image perspective correction. This is an image processing system developed for coastal research at the University of Washington Applied Physics Laboratory.
@@ -17,9 +15,9 @@ We present a system for multi-class segmentation and analysis of community user-
 
 Try image segmentation demo at  
 
-https://huggingface.co/spaces/AveMujica/CostalSegment  
 https://huggingface.co/spaces/AveMujica/MetalMarcy  
 https://huggingface.co/spaces/AveMujica/SilhouetteJaenette  
+https://huggingface.co/spaces/AveMujica/CostalSegment(slower, integrates outlier detection and spatial alignment, mainly used for the [MyCoast](https://mycoast.org/wa).)  
 
 ## News
 
