@@ -16,6 +16,8 @@ We present a system for multi-class segmentation and analysis of community user-
 </div>
 
 Try image segmentation demo at  
+
+https://huggingface.co/spaces/AveMujica/CostalSegment  
 https://huggingface.co/spaces/AveMujica/MetalMarcy  
 https://huggingface.co/spaces/AveMujica/SilhouetteJaenette  
 
@@ -49,10 +51,4 @@ Download pretrained image segmentation model form [link](https://drive.google.co
 conda activate CostalSeg
 python app.py
 ```
-By running app.py, a graphical interactive interface will automatically open in the browser.
-
-## Contributions
-
-## Acknowledgement
-
-## Citation
+By running app.py, a graphical interactive interface will automatically open in the browser. The user interface is simple and intuitive, so there is no need to go into details about how to use it. If you need assistance, please contact [Xinghao Chen](xhc42@outlook.com).
