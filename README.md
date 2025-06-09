@@ -47,4 +47,4 @@ Download pretrained image segmentation model form [link](https://drive.google.co
 conda activate CostalSeg
 python app.py
 ```
-By running app.py, a graphical interactive interface will automatically open in the browser. The user interface is simple and intuitive, so there is no need to go into details about how to use it. If you need assistance, please contact [Xinghao Chen](xhc42@outlook.com).
+By running app.py, a graphical interactive interface will automatically open in the browser. The user interface is simple and intuitive, so there is no need to go into details about how to use it. If you need assistance, please contact Xinghao Chen xhc42@outlook.com
