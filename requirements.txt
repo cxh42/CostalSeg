@@ -11,3 +11,5 @@ transformers==4.51.3
 albumentations==2.0.5
 pytorch_lightning==2.5.1.post0
 torchinfo==1.8.0
+huggingface_hub==0.24.6
+requests==2.32.3

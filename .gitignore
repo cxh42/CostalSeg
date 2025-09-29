@@ -1,0 +1,36 @@
+# Model weights
+*.pth
+*.pt
+*.bin
+models/*.pth
+models/*.pt
+models/*.bin
+
+# Reference vectors and large arrays (optional — keep if you want to version them)
+models/*.npy
+
+# Training datasets
+SegmentModelTraining/MetalMarcy/dataset/**
+SegmentModelTraining/SilhouetteJaenette/dataset/**
+
+# Dataset archives
+MM.v2i.png-mask-semantic.zip
+SJ.v4i.png-mask-semantic.zip
+
+# Training outputs
+prediction_results/
+*/prediction_results/
+outputs/**
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

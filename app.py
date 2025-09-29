@@ -451,15 +451,28 @@ Upload coastal photographs for segmentation analysis and spatial alignment. The 
             with gr.TabItem("Single Image Segmentation"):
                 with gr.Row():
                     loc1 = gr.Radio(list(MODEL_PATHS.keys()), label="Select Location", value=list(MODEL_PATHS.keys())[0])
-                
+
                 with gr.Row():
                     inp = gr.Image(label="Input Image", type="numpy", image_mode="RGB")
                     seg = gr.Image(label="Segmentation Map", type="numpy")
                     ovl = gr.Image(label="Overlay Visualization", type="numpy")
-                
+
                 with gr.Row():
                     btn1 = gr.Button("Run Analysis", variant="primary")
-                
+
+                # Built-in example images
+                gr.Examples(
+                    label="Examples",
+                    examples=[
+                        ["Metal Marcy", "reference_images/MM/2025-01-26_16-36-00_MM.jpg"],
+                        ["Metal Marcy", "reference_images/MM/2025-01-25_13-55-00_MM.jpg"],
+                        ["Silhouette Jaenette", "reference_images/SJ/2025-01-26_14-43-00_SJ.jpg"],
+                        ["Silhouette Jaenette", "reference_images/SJ/2025-01-23_11-22-00_SJ.jpg"],
+                    ],
+                    inputs=[loc1, inp],
+                    examples_per_page=4,
+                )
+
                 status1 = gr.HTML(label="Outlier Detection Status")
                 res1 = gr.HTML(label="Terrain Analysis")
                 
@@ -489,14 +502,33 @@ Upload coastal photographs for segmentation analysis and spatial alignment. The 
             with gr.TabItem("Spatial Alignment Segmentation"):
                 with gr.Row():
                     loc2 = gr.Radio(list(MODEL_PATHS.keys()), label="Select Location", value=list(MODEL_PATHS.keys())[0])
-                
+
                 with gr.Row():
                     ref_img = gr.Image(label="Reference Image", type="numpy", image_mode="RGB")
                     tgt_img = gr.Image(label="Target Image for Analysis", type="numpy", image_mode="RGB")
-                
+
                 with gr.Row():
                     btn2 = gr.Button("Run Spatial Alignment Analysis", variant="primary")
-                
+
+                # Built-in paired examples (reference, target)
+                gr.Examples(
+                    label="Examples",
+                    examples=[
+                        [
+                            "Metal Marcy",
+                            "reference_images/MM/2025-01-26_16-36-00_MM.jpg",
+                            "reference_images/MM/2025-01-25_13-55-00_MM.jpg",
+                        ],
+                        [
+                            "Silhouette Jaenette",
+                            "reference_images/SJ/2025-01-26_14-43-00_SJ.jpg",
+                            "reference_images/SJ/2025-01-23_11-22-00_SJ.jpg",
+                        ],
+                    ],
+                    inputs=[loc2, ref_img, tgt_img],
+                    examples_per_page=2,
+                )
+
                 with gr.Row():
                     orig = gr.Image(label="Original Reference", type="numpy")
                     aligned = gr.Image(label="Aligned Image", type="numpy")
