@@ -1,7 +1,5 @@
 # CostalSeg — Installation & User Guide (Windows + NVIDIA GPU)
 
-**Project URL:** https://github.com/cxh42/CostalSeg
-
 **Overview**  
 CostalSeg is a project for coastal image segmentation. This guide explains how to set up a Windows + NVIDIA GPU environment, fetch pretrained assets, (optionally) retrain, and launch the app for interactive use.
 
