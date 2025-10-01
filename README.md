@@ -41,29 +41,9 @@ pip install -r requirements.txt
 python scripts/fetch_assets.py
 ```
 
-What it does
-
-- Downloads pretrained models to `models/`:
-  - `MM_best_model.pth` from https://huggingface.co/AveMujica/CostalSeg-MM
-  - `SJ_best_model.pth` from https://huggingface.co/AveMujica/CostalSeg-SJ
-- Syncs datasets from Hugging Face Datasets to training folders:
-  - `AveMujica/CostalSeg-MM` -> `SegmentModelTraining/MetalMarcy/dataset`
-  - `AveMujica/CostalSeg-SJ` -> `SegmentModelTraining/SilhouetteJaenette/dataset`
-- Optionally downloads reference vectors if missing (`models/*_mean.npy`).
-
-You can force re-download by adding `--force`.
-
 **2. Training segmentation model from scratch:**
 
-If you dont want to train model by yourself, just use 1. One-click setup above. 
-
-Datasets are NOT bundled in this repository. Please download them from Hugging Face (see section 3 below). After download, the folder layout expected by `train.py` is:
-
-- `SegmentModelTraining/<Site>/dataset/train/*.jpg` with matching `*_mask.png`
-- `SegmentModelTraining/<Site>/dataset/valid/*.jpg` with matching `*_mask.png`
-- `SegmentModelTraining/<Site>/dataset/test/*.jpg` with matching `*_mask.png`
-
-Run `./SegmentModelTraining/MetalMarcy/train.py` and `./SegmentModelTraining/SilhouetteJaenette/train.py` to train model, then save your best trained .pth model to `./models`, rename them to `MM_best_model.pth` and `SJ_best_model.pth`
+**SKIP THIS STEP IF YOU DO NOT WANT TO TRAIN MODEL BY YOURSELF**, just use One-click setup above. 
 
 Start training (two sites):
 
@@ -75,53 +55,19 @@ python SegmentModelTraining/MetalMarcy/train.py
 python SegmentModelTraining/SilhouetteJaenette/train.py
 ```
 
-Notes
-
-- The scripts expect masks to be named as `<image_basename>_mask.png` in the same folder as the images.
-- Uses PyTorch Lightning; GPU is auto-detected if available. On Windows, `num_workers=0` is already set.
-
-**3. Pretrained models**
-
-No manual download needed. Running `python scripts/fetch_assets.py` will place the weights at:
-
-- `models/MM_best_model.pth`
-- `models/SJ_best_model.pth`
-
-For reference, models are hosted on:
-
-- https://huggingface.co/AveMujica/CostalSeg-MM
-- https://huggingface.co/AveMujica/CostalSeg-SJ
-
-Optional: reference vectors for outlier detection
-
-`app.py` also uses `models/MM_mean.npy` and `models/SJ_mean.npy` if present; missing vectors do not block running the app.
-
-
-
 ## Run
 ```bash
 conda activate CostalSeg
 python app.py
 ```
-By running app.py, a graphical interactive interface will automatically open in the browser. The user interface is simple and intuitive, so there is no need to go into details about how to use it. If you need assistance, please contact Xinghao Chen xhc42@outlook.com
+By running app.py, a graphical interactive interface will automatically open in the browser.
 
-### Built-in Examples
+## Batch Processing
 
-The UI includes example images you can load with one click (see the "Examples" blocks in both tabs):
-
-- Single Image Segmentation: preloaded samples from `reference_images/MM` and `reference_images/SJ`.
-- Spatial Alignment Segmentation: paired examples (reference + target) for both sites.
-
-You can also drop your own images into the inputs; no special formatting required.
-
-## Batch Processing (CLI)
-
-For bulk processing without GUI, use the CLI script `batch_infer.py`. It supports two workflows:
+For bulk processing without GUI, use the script `batch_infer.py`. It supports two workflows:
 
 - Segmentation on a folder of images
 - Spatial alignment (one reference) + segmentation for a folder of targets
-
-Ensure pretrained weights are in place (see above) before running.
 
 Examples
 
@@ -148,8 +94,3 @@ python batch_infer.py align \
   --output outputs/mm_aligned \
   --overlay
 ```
-
-Outputs
-
-- For each input image: `*_seg.png` (segmentation map), `*_overlay.png` (if `--overlay`).
-- Per-run CSV summary: `summary.csv` containing percentages of each class and optional `outlier` column.
