@@ -37,7 +37,6 @@ pip install -r requirements.txt
 Run a single script to fetch everything to the right places:
 
 ```bash
-pip install -r requirements.txt
 python scripts/fetch_assets.py
 ```
 
@@ -57,7 +56,6 @@ python SegmentModelTraining/SilhouetteJaenette/train.py
 
 ## Run
 ```bash
-conda activate CostalSeg
 python app.py
 ```
 By running app.py, a graphical interactive interface will automatically open in the browser.
