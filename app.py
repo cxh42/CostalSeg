@@ -278,6 +278,27 @@ def perform_segmentation(model, image_bgr):
     analysis = create_analysis_result(mask)
     return seg_map, overlay, analysis
 
+def predict_mask_and_analysis(model, image_bgr):
+    """
+    Run model on the original (pre-alignment) image and return
+    the raw class-index mask (model resolution) and analysis HTML.
+
+    Args:
+        model: Loaded PyTorch model
+        image_bgr (np.array): Input image in BGR format
+
+    Returns:
+        tuple: (mask_1024, orig_h, orig_w, analysis_html)
+    """
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+    image_tensor, orig_h, orig_w = preprocess_image(image_rgb)
+    with torch.no_grad():
+        prediction = model(image_tensor.to(device))
+    mask_1024 = prediction.argmax(1).squeeze().cpu().numpy()
+    analysis = create_analysis_result(mask_1024)
+    return mask_1024, orig_h, orig_w, analysis
+
 # Split the processing into separate functions for progressive display
 
 def run_segmentation(location, input_image, progress=gr.Progress()):
@@ -409,25 +430,44 @@ def run_alignment_and_segmentation(location, reference_image, input_image, progr
     ref_bgr = cv2.cvtColor(np.array(reference_image), cv2.COLOR_RGB2BGR)
     tgt_bgr = cv2.cvtColor(np.array(input_image), cv2.COLOR_RGB2BGR)
     
-    # Perform alignment (this step is needed before segmentation)
-    progress(0.3, desc="Performing spatial alignment...")
-    aligned, _ = align_images([ref_bgr, tgt_bgr], [np.zeros_like(ref_bgr), np.zeros_like(tgt_bgr)])
-    aligned_tgt_bgr = aligned[1]
-    
-    # Convert images for display
+    # 1) Perform segmentation on pre-aligned target image
+    progress(0.3, desc="Performing segmentation (pre-alignment)...")
+    mask_1024, orig_h, orig_w, analysis_pre = predict_mask_and_analysis(model, tgt_bgr)
+
+    # Resize mask back to original target size and lightly postprocess (same as visualization path)
+    mask_resized = cv2.resize(mask_1024, (tgt_bgr.shape[1], tgt_bgr.shape[0]), interpolation=cv2.INTER_NEAREST)
+    kernel = np.ones((5, 5), np.uint8)
+    processed_mask = mask_resized.copy()
+    for idx in range(1, len(CLASSES)):
+        class_mask = (mask_resized == idx).astype(np.uint8)
+        dilated_mask = cv2.dilate(class_mask, kernel, iterations=2)
+        dilated_effect = dilated_mask & (mask_resized == 0)
+        processed_mask[dilated_effect > 0] = idx
+
+    # 2) Perform spatial alignment on images and warp the segmentation mask using the same transform
+    progress(0.6, desc="Performing spatial alignment...")
+    ref_seg_dummy = np.zeros(ref_bgr.shape[:2], dtype=np.uint8)
+    aligned_imgs, aligned_segs = align_images([ref_bgr, tgt_bgr], [ref_seg_dummy, processed_mask.astype(np.uint8)])
+    aligned_tgt_bgr = aligned_imgs[1]
+    aligned_mask = aligned_segs[1]
+
+    # 3) Prepare display images
     ref_rgb = cv2.cvtColor(ref_bgr, cv2.COLOR_BGR2RGB)
     aligned_tgt_rgb = cv2.cvtColor(aligned_tgt_bgr, cv2.COLOR_BGR2RGB)
-    
-    # Show alignment complete status
-    progress(0.5, desc="Alignment complete, performing segmentation...")
-    
-    # Now perform segmentation
-    seg_map, overlay, analysis = perform_segmentation(model, aligned_tgt_bgr)
-    
+
+    # Colorize aligned mask for visualization
+    seg_map_aligned = np.zeros((aligned_mask.shape[0], aligned_mask.shape[1], 3), dtype=np.uint8)
+    for idx, color in enumerate(COLORS):
+        seg_map_aligned[aligned_mask == idx] = color
+
+    # Overlay on aligned image
+    overlay_aligned = create_overlay(aligned_tgt_rgb, seg_map_aligned)
+
     status = "Spatial Alignment: <span style='color:green;font-weight:bold'>Successfully Completed</span>"
-    
+
+    # 4) Return analysis from pre-alignment mask to avoid black-border bias
     progress(1.0, desc="Analysis complete")
-    return ref_rgb, aligned_tgt_rgb, seg_map, overlay, analysis, status
+    return ref_rgb, aligned_tgt_rgb, seg_map_aligned, overlay_aligned, analysis_pre, status
 
 # Create the Gradio interface with progressive display
 def create_interface():

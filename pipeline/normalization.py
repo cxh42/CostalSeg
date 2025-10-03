@@ -67,7 +67,10 @@ def align_images(images, segs):
             h, w = reference.shape[:2]
             aligned = cv2.warpPerspective(current, H, (w, h))
             aligned_images.append(aligned)
-            aligned_seg = cv2.warpPerspective(current_seg, H, (w, h))
+            # Preserve class indices when warping segmentation masks
+            aligned_seg = cv2.warpPerspective(
+                current_seg, H, (w, h), flags=cv2.INTER_NEAREST
+            )
             aligned_images_seg.append(aligned_seg)
         else:
             print(f"Could not find homography for image {i}, keeping original")
