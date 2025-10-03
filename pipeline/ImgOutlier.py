@@ -7,6 +7,14 @@ from torchvision import transforms as tr
 from torchvision.models import vit_h_14
 import cv2
 
+# Ensure preprocessing matches reference vector generation when applicable
+try:
+    # When used as part of the package
+    from .HSV import preprocess_images
+except Exception:
+    # Fallback for direct script usage
+    from pipeline.HSV import preprocess_images
+
 class CosineSimilarity:
     def __init__(self, vector='feature', threshold=0.8, mean_vec=[], device=None):
         """
@@ -189,10 +197,18 @@ def detect_outliers(ref_imgs, imgs, mean_vec=[]):
         mean: the reference vector used (if a new reference vector should be saved)
     """
     
+    # Apply HSV-based brightness normalization to match reference vector preparation
+    try:
+        proc_ref = preprocess_images(ref_imgs) if isinstance(ref_imgs, (list, tuple)) else ref_imgs
+        proc_imgs = preprocess_images(imgs) if isinstance(imgs, (list, tuple)) else imgs
+    except Exception:
+        # If preprocessing fails for any reason, fall back to originals
+        proc_ref, proc_imgs = ref_imgs, imgs
+
     similarity = CosineSimilarity(vector='feature', threshold=0.8, mean_vec=mean_vec)
 
     # Get outlier mask, scores, and reference vector
-    outlier_mask, scores, mean_vector = similarity.find_outliers(ref_imgs, imgs)
+    outlier_mask, scores, mean_vector = similarity.find_outliers(proc_ref, proc_imgs)
 
     # Filter out outliers
     filtered_images = [img for i, img in enumerate(imgs) if not outlier_mask[i]]
