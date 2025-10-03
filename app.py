@@ -329,8 +329,8 @@ def run_outlier_detection(location, input_image, progress=gr.Progress()):
     if input_image is None:
         return "No image detected"
     
-    # Set up CPU device
-    cpu_device = "cpu"
+    # Choose device for outlier detection (prefer GPU if available)
+    det_device = "cuda" if torch.cuda.is_available() else "cpu"
     
     # Show loading status
     progress(0, desc="Loading reference data...")
@@ -342,17 +342,16 @@ def run_outlier_detection(location, input_image, progress=gr.Progress()):
     image_bgr = cv2.cvtColor(np.array(input_image), cv2.COLOR_RGB2BGR)
     
     # Perform outlier detection
-    progress(0.3, desc="Performing outlier detection (CPU)...")
+    progress(0.3, desc=f"Performing outlier detection ({det_device.upper()})...")
     is_outlier = False
     
-    # Force CPU usage for outlier detection
-    with torch.device(cpu_device):
-        if len(ref_vector) > 0:
-            filtered, _ = detect_outliers(ref_images, [image_bgr], ref_vector)
-            is_outlier = len(filtered) == 0
-        else:
-            filtered, _ = detect_outliers(ref_images, [image_bgr])
-            is_outlier = len(filtered) == 0
+    # Run detection using selected device
+    if len(ref_vector) > 0:
+        filtered, _ = detect_outliers(ref_images, [image_bgr], ref_vector, device=det_device)
+        is_outlier = len(filtered) == 0
+    else:
+        filtered, _ = detect_outliers(ref_images, [image_bgr], device=det_device)
+        is_outlier = len(filtered) == 0
     
     progress(1.0, desc="Outlier detection complete")
     outlier_status = "Outlier Detection: <span style='color:red;font-weight:bold'>Failed</span>" if is_outlier else "Outlier Detection: <span style='color:green;font-weight:bold'>Passed</span>"

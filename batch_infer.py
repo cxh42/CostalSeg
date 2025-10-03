@@ -162,9 +162,9 @@ def cmd_segment(args: argparse.Namespace) -> int:
                     if bgr is None:
                         raise RuntimeError(f"Failed to read image: {path}")
                     if isinstance(ref_vector, np.ndarray) and ref_vector.size > 0:
-                        filtered, _ = detect_outliers(ref_images, [bgr], ref_vector)
+                        filtered, _ = detect_outliers(ref_images, [bgr], ref_vector, device=device)
                     else:
-                        filtered, _ = detect_outliers(ref_images, [bgr])
+                        filtered, _ = detect_outliers(ref_images, [bgr], device=device)
                     is_outlier = len(filtered) == 0
                     outlier_flag = "1" if is_outlier else "0"
 

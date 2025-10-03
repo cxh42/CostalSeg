@@ -103,7 +103,8 @@ class CosineSimilarity:
         for img in test_images:
             processed_img = self.process_image(img)
             if self.vector == 'feature':
-                emb = model(processed_img).detach().cpu()
+                # Keep embeddings on the selected device for speed
+                emb = model(processed_img).detach()
                 emb_test.append(emb)
             else:  # 'image'
                 emb_test.append(processed_img)
@@ -111,7 +112,8 @@ class CosineSimilarity:
         # This checks if a reference vector is loaded, if so the process of getting
         # reference embeddings can be skipped for efficiency
         if len(self.mean_vec) > 0:
-            emb_ref = torch.tensor(self.mean_vec)
+            # Ensure provided reference vector is on the same device
+            emb_ref = torch.tensor(self.mean_vec, device=self.device, dtype=torch.float32)
 
         # Process reference images if necessary
         else:
@@ -120,7 +122,8 @@ class CosineSimilarity:
                 emb_ref_list = []
                 for img in ref_images:
                     processed_img = self.process_image(img)
-                    emb = model(processed_img).detach().cpu()
+                    # Keep on device; avoid CPU roundtrips
+                    emb = model(processed_img).detach()
                     emb_ref_list.append(emb)
 
                 # Average the reference embeddings
@@ -161,7 +164,8 @@ class CosineSimilarity:
             # True if it's an outlier (below threshold)
             mask.append(score_value <= self.threshold)
 
-        return np.array(mask), scores, emb_ref
+        # Return reference embedding on CPU to ease serialization (np.save)
+        return np.array(mask), scores, emb_ref.detach().cpu()
 
     def filter_outliers(self, ref_images, test_images):
         """
@@ -183,7 +187,7 @@ class CosineSimilarity:
 
         return filtered_images, outlier_mask, scores, mean
 
-def detect_outliers(ref_imgs, imgs, mean_vec=[]):
+def detect_outliers(ref_imgs, imgs, mean_vec=[], device=None, threshold=0.8):
     """
     Detects outliers in a set of test images, can use a reference vector
 
@@ -205,7 +209,7 @@ def detect_outliers(ref_imgs, imgs, mean_vec=[]):
         # If preprocessing fails for any reason, fall back to originals
         proc_ref, proc_imgs = ref_imgs, imgs
 
-    similarity = CosineSimilarity(vector='feature', threshold=0.8, mean_vec=mean_vec)
+    similarity = CosineSimilarity(vector='feature', threshold=threshold, mean_vec=mean_vec, device=device)
 
     # Get outlier mask, scores, and reference vector
     outlier_mask, scores, mean_vector = similarity.find_outliers(proc_ref, proc_imgs)
