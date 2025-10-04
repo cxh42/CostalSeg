@@ -411,7 +411,15 @@ def run_alignment_and_segmentation(location, reference_image, input_image, progr
         progress: Gradio progress indicator
         
     Returns:
-        tuple: (reference image, aligned image, segmentation map, overlay image, analysis HTML, status HTML)
+        tuple: (
+            reference image,
+            aligned image,
+            segmentation map (aligned),
+            overlay image (aligned),
+            pre-alignment analysis HTML,
+            aligned analysis HTML,
+            status HTML
+        )
     """
     if reference_image is None or input_image is None:
         return None, None, None, None, "Please upload both reference and target images for analysis", "Not processed"
@@ -465,9 +473,12 @@ def run_alignment_and_segmentation(location, reference_image, input_image, progr
 
     status = "Spatial Alignment: <span style='color:green;font-weight:bold'>Successfully Completed</span>"
 
-    # 4) Return analysis from pre-alignment mask to avoid black-border bias
+    # 4) Compute analysis from aligned mask (includes black borders)
+    analysis_aligned = create_analysis_result(aligned_mask.astype(np.uint8))
+
+    # 5) Return both analyses: pre-alignment and aligned
     progress(1.0, desc="Analysis complete")
-    return ref_rgb, aligned_tgt_rgb, seg_map_aligned, overlay_aligned, analysis_pre, status
+    return ref_rgb, aligned_tgt_rgb, seg_map_aligned, overlay_aligned, analysis_pre, analysis_aligned, status
 
 # Create the Gradio interface with progressive display
 def create_interface():
@@ -577,13 +588,14 @@ Upload coastal photographs for segmentation analysis and spatial alignment. The 
                     ovl2 = gr.Image(label="Overlay Visualization", type="numpy")
                 
                 status2 = gr.HTML(label="Spatial Alignment Status")
-                res2 = gr.HTML(label="Terrain Analysis")
+                res2_pre = gr.HTML(label="Pre-alignment Analysis")
+                res2_aligned = gr.HTML(label="Aligned Analysis (with borders)")
                 
                 # For alignment, we use the progressive display function
                 btn2.click(
                     fn=run_alignment_and_segmentation,
                     inputs=[loc2, ref_img, tgt_img],
-                    outputs=[orig, aligned, seg2, ovl2, res2, status2]
+                    outputs=[orig, aligned, seg2, ovl2, res2_pre, res2_aligned, status2]
                 )
     
     return demo
